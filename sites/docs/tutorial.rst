@@ -1,113 +1,86 @@
 =====================
-Overview and Tutorial
+快速教程
 =====================
 
-Welcome to Fabric!
+欢迎来到 Fabric!
 
-This document is a whirlwind tour of Fabric's features and a quick guide to its
-use. Additional documentation (which is linked to throughout) can be found in
-the :ref:`usage documentation <usage-docs>` -- please make sure to check it out.
+本篇文档将带领你快速体验 Fabric 的特性，并给出一个快速用法指南。额外的详细文档可以在 :ref:`用法文档 <usage-docs>` 中找到-- 请别忘了看。
 
 
-What is Fabric?
+什么是 Fabric?
 ===============
 
-As the ``README`` says:
+正如 ``README`` 所说:
 
     .. include:: ../../README.rst
         :end-before: It provides
 
-More specifically, Fabric is:
+更具体的来说，Fabric 是:
 
-* A tool that lets you execute **arbitrary Python functions** via the **command
-  line**;
-* A library of subroutines (built on top of a lower-level library) to make
-  executing shell commands over SSH **easy** and **Pythonic**.
+* 一个让你通过 **命令行** 执行 **任意 Python 函数** 的工具；
+* 一个（建立于一个更低层次库的基础上的）程序库使得通过 SSH 执行 SHELL 指令更 **容易** 并且 **Pyhtonic**。
 
-Naturally, most users combine these two things, using Fabric to write and
-execute Python functions, or **tasks**, to automate interactions with remote
-servers. Let's take a look.
+自然而然, 大多数用户将这两个特性结合起来，写函数并通过 Fabric 来执行函数，或者 **任务**，自动化与远程服务器的交互。让我们先睹为快。
 
 
-Hello, ``fab``
+你好， ``fab``
 ==============
 
-This wouldn't be a proper tutorial without "the usual"::
+没有下面这个“惯例”，这个教程在严格意义上就不能称作教程::
 
     def hello():
         print("Hello world!")
 
-Placed in a Python module file named ``fabfile.py`` in your current working
-directory, that ``hello`` function can be executed with the ``fab`` tool
-(installed as part of Fabric) and does just what you'd expect::
+将代码放置在你当前工作目录下的 ``fabfile.py`` Python模块文件中，这样 ``hello`` 函数就可以被 ``fab`` 工具（作为 Fabric 的一部分安装的）执行，并且如你所料的工作::
 
     $ fab hello
     Hello world!
 
     Done.
 
-That's all there is to it. This functionality allows Fabric to be used as a
-(very) basic build tool even without importing any of its API.
+这就是它所做的。这个功能允许 Fabric 作为一个非常基础的构建工具被使用，甚至不需要导入任何它的 API 。
 
 .. note::
 
-    The ``fab`` tool simply imports your fabfile and executes the function or
-    functions you instruct it to. There's nothing magic about it -- anything
-    you can do in a normal Python script can be done in a fabfile!
+    ``fab`` 工具只是导入了你的 fabfile 并且执行了你指定的函数。这没什么神奇的 -- 你可以用一个普通的 Python 脚本做到的也同样可以在一个 fabfile 中做到！
 
 .. seealso:: :ref:`execution-strategy`, :doc:`/usage/tasks`, :doc:`/usage/fab`
 
 
-Task arguments
+任务参数
 ==============
 
-It's often useful to pass runtime parameters into your tasks, just as you might
-during regular Python programming. Fabric has basic support for this using a
-shell-compatible notation: ``<task name>:<arg>,<kwarg>=<value>,...``. It's
-contrived, but let's extend the above example to say hello to you personally::
+把运行时参数传递给你的任务通常是很有用的，就像常规 Python 编程中一样。 Fabric 支持一种 shell 兼容的用法: ``<task name>:<arg>,<kwarg>=<value>,...``。这有点不自然，不过让我们来拓展一下上面的例子，对你自己 say hello::
 
     def hello(name="world"):
         print("Hello %s!" % name)
 
-By default, calling ``fab hello`` will still behave as it did before; but now
-we can personalize it::
+默认的，调用 ``fab hello`` 将会表现的和上面一样；但是现在我们可以个性化它::
 
     $ fab hello:name=Jeff
     Hello Jeff!
 
     Done.
 
-Those already used to programming in Python might have guessed that this
-invocation behaves exactly the same way::
+那些过去用 Python 写过程序的人也许已经猜到了，这个调用与下面的调用效果一样::
 
     $ fab hello:Jeff
     Hello Jeff!
 
     Done.
 
-For the time being, your argument values will always show up in Python as
-strings and may require a bit of string manipulation for complex types such
-as lists. Future versions may add a typecasting system to make this easier.
+目前，你的参数值总是会做为字符串在 Python 中表现，对于复杂类型，例如列表也许需要一些字符串操作。后续的版本中可能会添加一个类型转换系统以简化此类操作。
 
 .. seealso:: :ref:`task-arguments`
 
-Local commands
+本地命令
 ==============
 
-As used above, ``fab`` only really saves a couple lines of
-``if __name__ == "__main__"`` boilerplate. It's mostly designed for use with
-Fabric's API, which contains functions (or **operations**) for executing shell
-commands, transferring files, and so forth.
+正如上面使用到的, ``fab`` 只是省略了几行 ``if __name__ == "__main__"`` 样板而已。 它被设计为通过函数（或 **操作**）使用 Fabric API ，包括执行 SHELL 命令，传输文件等。
 
-Let's build a hypothetical Web application fabfile. This example scenario is
-as follows: The Web application is managed via Git on a remote host
-``vcshost``. On ``localhost``, we have a local clone of said Web application.
-When we push changes back to ``vcshost``, we want to be able to immediately
-install these changes on a remote host ``my_server`` in an automated fashion.
-We will do this by automating the local and remote Git commands.
+让我们来为假想的 Web 应用构建一个 fabfile 文件。这个例子包含如下场景：Web 服务器通过远程主机 ``vcshost``上的 Git 来管理。在 ``localhost`` 上，我们有一个应用的本地克隆副本。当我们推送变更到 ``vcshost`` 时，我们希望能够自动的立刻应用这些变更到我们的远程主机 ``my_server`` 上。我们将通过本地即远程 Git 命令来自动化这个操作。
 
-Fabfiles usually work best at the root of a project::
-
+Fabfile文件通常最好放在项目的根目录下::
     .
     |-- __init__.py
     |-- app.wsgi
@@ -124,11 +97,9 @@ Fabfiles usually work best at the root of a project::
 
 .. note::
 
-    We're using a Django application here, but only as an example -- Fabric is
-    not tied to any external codebase, save for its SSH library.
+    我们在这里使用一个Django应用，但仅作为一个例子 -- Fabric 不与任何外部代码库绑定，除了它的 SSH 库。
 
-For starters, perhaps we want to run our tests and commit to our VCS so we're
-ready for a deploy::
+作为起步，也许你想运行我们的测试然后提交到我们的版本控制系统，为我们的部署做好准备::
 
     from fabric.api import local
 
@@ -137,7 +108,7 @@ ready for a deploy::
         local("git add -p && git commit")
         local("git push")
 
-The output of which might look a bit like this::
+输出看起来应该像这样::
 
     $ fab prepare_deploy
     [localhost] run: ./manage.py test my_app
@@ -161,19 +132,15 @@ The output of which might look a bit like this::
 
     Done.
 
-The code itself is straightforward: import a Fabric API function,
-`~fabric.operations.local`, and use it to run and interact with local shell
-commands. The rest of Fabric's API is similar -- it's all just Python.
+这段代码本身很直观：导入一个 Fabric 的 API 函数，`~fabric.operations.local`，并用它来运行本地 SHELL 命令并与之交互。Fabric 其余的 API 也很类似 -- 它们都只是 Python 代码而已。
 
 .. seealso:: :doc:`api/core/operations`, :ref:`fabfile-discovery`
 
 
-Organize it your way
+用你的方式来组织
 ====================
 
-Because Fabric is "just Python" you're free to organize your fabfile any way
-you want. For example, it's often useful to start splitting things up into
-subtasks::
+由于 Fabric “只是 Python 代码” 你可以自由的组织你的 fabfile 通过任何你想的方式。例如，经常将任务分解为子任务::
 
     from fabric.api import local
 
@@ -191,19 +158,15 @@ subtasks::
         commit()
         push()
 
-The ``prepare_deploy`` task can be called just as before, but now you can make
-a more granular call to one of the sub-tasks, if desired.
+``prepare_deploy`` 任务仍然可以像之前一样使用，但是现在只要你想，你就可以更细颗粒度的调用其他子任务。
 
 
-Failure
+故障
 =======
 
-Our base case works fine now, but what happens if our tests fail?  Chances are
-we want to put on the brakes and fix them before deploying.
+我们的基本用例现在仍然工作正常，但如果我们的测试失败了会怎么样？我们希望在部署前，可以有机会消除阻碍，并修复失败测试。
 
-Fabric checks the return value of programs called via operations and will abort
-if they didn't exit cleanly. Let's see what happens if one of our tests
-encounters an error::
+Fabfile 会检验程序的返回值，如果它没正确退出那么就会中止操作。来看看如果我们的一个用例没通过会发生什么::
 
     $ fab prepare_deploy
     [localhost] run: ./manage.py test my_app
@@ -227,21 +190,17 @@ encounters an error::
 
     Aborting.
 
-Great! We didn't have to do anything ourselves: Fabric detected the failure and
-aborted, never running the ``commit`` task.
+太棒了！我们什么都不用做：Fabfile 探测到了失败并中止操作，没有运行 ``commit`` 任务。
 
 .. seealso:: :ref:`Failure handling (usage documentation) <failures>`
 
-Failure handling
+故障处理
 ----------------
 
-But what if we wanted to be flexible and give the user a choice? A setting
-(or **environment variable**, usually shortened to **env var**) called
-:ref:`warn_only` lets you turn aborts into warnings, allowing flexible error
-handling to occur.
+但是如果我们希望能灵活的给用户一个选择，该怎么呢？一个叫做 :ref:`warn_only` 的设置
+(或者叫 **envrionment variable**，通常缩写为 **env var**)让你将中止行为变成警告，允许灵活的处理出现的错误。
 
-Let's flip this setting on for our ``test`` function, and then inspect the
-result of the `~fabric.operations.local` call ourselves::
+来将这个设置应用到我们的 ``test`` 函数中的，并审查 `~fabric.operations.local` 的调用结果::
 
     from __future__ import with_statement
     from fabric.api import local, settings, abort
@@ -255,30 +214,23 @@ result of the `~fabric.operations.local` call ourselves::
 
     [...]
 
-In adding this new feature we've introduced a number of new things:
+在添加这个新特性之前，我们引入了一些新的东西:
 
-* The ``__future__`` import required to use ``with:`` in Python 2.5;
-* Fabric's `contrib.console <fabric.contrib.console>` submodule, containing the
-  `~fabric.contrib.console.confirm` function, used for simple yes/no prompts;
-* The `~fabric.context_managers.settings` context manager, used to apply
-  settings to a specific block of code;
-* Command-running operations like `~fabric.operations.local` can return objects
-  containing info about their result (such as ``.failed``, or
-  ``.return_code``);
-* And the `~fabric.utils.abort` function, used to manually abort execution.
+* 从 ``__future__`` 中你引入的东西，用于在 Python 2.5 版本中使用 ``with:`` 语句；
+* Fabric的子模块 `contrib.console <fabric.contrib.console>` ，包含 `~fabric.contrib.console.confirm` 函数，用于简单的请求输入 yes/no；
+* 上下文管理器 `~fabric.context_managers.settings`，用于应用设置到一个具体的代码块；
+* 像 `~fabric.operations.local` 这样的运行命令会返回包含结果信息（如 ``.failed`` 或 ``.return_code``）的对象；
+* 并且 `~fabric.utils.abort` 函数，用于手动的中止执行。
 
-However, despite the additional complexity, it's still pretty easy to follow,
-and is now much more flexible.
+然而，除了增加了一点复杂度，仍然是相当容易使用的，并且它现在更灵活了。
 
 .. seealso:: :doc:`api/core/context_managers`, :ref:`env-vars`
 
 
-Making connections
+创建连接
 ==================
 
-Let's start wrapping up our fabfile by putting in the keystone: a ``deploy``
-task that is destined to run on one or more remote server(s), and ensures the
-code is up to date::
+让我们回到重点， 将一个 ``deploy`` 任务放到我们的 fabfile 中，它会在一台或者多台机器上执行，确保你的代码是最新的::
 
     def deploy():
         code_dir = '/srv/django/myproject'
@@ -286,23 +238,20 @@ code is up to date::
             run("git pull")
             run("touch app.wsgi")
 
-Here again, we introduce a handful of new concepts:
+到目前为止，我们引入了几个新内容:
 
-* Fabric is just Python -- so we can make liberal use of regular Python code
-  constructs such as variables and string interpolation;
-* `~fabric.context_managers.cd`, an easy way of prefixing commands with a ``cd
-  /to/some/directory`` call. This is similar to  `~fabric.context_managers.lcd`
-  which does the same locally.
-* `~fabric.operations.run`, which is similar to `~fabric.operations.local` but
-  runs **remotely** instead of locally.
+* Fabric 只是 Python 代码 -- 所以我们可以自由的使用常规 Python 代码，像构造变量，字符串插值等；
+* 使用 `~fabric.context_managers.cd` 是一个简单的方式调用 ``cd
+  /to/some/directory`` 命令。这跟本地运行的 `~fabric.context_managers.lcd` 命令很像。
+* `~fabric.operations.run` 命令跟 `~fabric.operations.local` 命令很像，除了它是在**远程主机运行**而不是在本地。
 
-We also need to make sure we import the new functions at the top of our file::
+我们还要确认在文件头部导入了新函数::
 
     from __future__ import with_statement
     from fabric.api import local, settings, abort, run, cd
     from fabric.contrib.console import confirm
 
-With these changes in place, let's deploy::
+改好之后，开始部署::
 
     $ fab deploy
     No hosts found. Please specify (single) host string for connection: my_server
@@ -313,20 +262,14 @@ With these changes in place, let's deploy::
 
     Done.
 
-We never specified any connection info in our fabfile, so Fabric doesn't know
-on which host(s) the remote command should be executed. When this happens,
-Fabric prompts us at runtime. Connection definitions use SSH-like "host
-strings" (e.g. ``user@host:port``) and will use your local username as a
-default -- so in this example, we just had to specify the hostname,
-``my_server``.
+我们从未在我们的 fabfile 中指定一个连接，因此 Fabric 不知道在哪个远程主机上执行这些命令。当出现这种情况时，Fabric
+在运行时会提示我们。连接的定义使用 SSH 风格的“主机串”（例如 ``user@host:port``）并将默认使用你本地的用户名 -- 因此在这个例子中，我们只需要指定主机名 ``my_server``。
 
 
-Remote interactivity
+远程交互
 --------------------
 
-``git pull`` works fine if you've already got a checkout of your source code --
-but what if this is the first deploy? It'd be nice to handle that case too and
-do the initial ``git clone``::
+如果你已经部署过了一份你的源码，那么 ``git pull`` 命令会正常工作。-- 但如果这是第一次部署呢？那也很容易处理这种情况通过运行 ``git clone``::
 
     def deploy():
         code_dir = '/srv/django/myproject'
@@ -337,21 +280,11 @@ do the initial ``git clone``::
             run("git pull")
             run("touch app.wsgi")
 
-As with our calls to `~fabric.operations.local` above, `~fabric.operations.run`
-also lets us construct clean Python-level logic based on executed shell
-commands. However, the interesting part here is the ``git clone`` call: since
-we're using Git's SSH method of accessing the repository on our Git server,
-this means our remote `~fabric.operations.run` call will need to authenticate
-itself.
+就如我们上面调用 `~fabric.operations.local` 一样，`~fabric.operations.run` 也允许我们基于运行 SHELL 命令来构造干净的 Python 级别逻辑。然而这里有意思的是调用 ``git clone``：由于我们使用 Git 的 SSH 方法来访问我们 Git 服务器上的仓库，这意味着我们的远程 `~fabric.operations.run` 调用会需要身份认证。
 
-Older versions of Fabric (and similar high level SSH libraries) run remote
-programs in limbo, unable to be touched from the local end. This is
-problematic when you have a serious need to enter passwords or otherwise
-interact with the remote program.
+老版本的 Fabric （以及类似的高阶 SSH 库）在黑暗中运行远程程序，无法与本地交互。当你需要输入密码或者需要与远程程序交互时这个问题尤其明显。
 
-Fabric 1.0 and later breaks down this wall and ensures you can always talk to
-the other side. Let's see what happens when we run our updated ``deploy`` task
-on a new server with no Git checkout::
+Fabric 1.0 以及之后的版本突破了这个限制，并允许你总能与其他方面说话。来看看当我们在一台未部署过代码的新服务器运行更新后的 ``deploy`` 任务时会发生什么::
 
     $ fab deploy
     No hosts found. Please specify (single) host string for connection: my_server
@@ -375,25 +308,21 @@ on a new server with no Git checkout::
 
     Done.
 
-Notice the ``Password:`` prompt -- that was our remote ``git`` call on our Web server, asking for the password to the Git server. We were able to type it in and the clone continued normally.
+注意这里的 ``Password:`` 提示 -- 这是我们远程调用我们 Web服务器上的 ``git`` 命令，请求输入 Git 的密码。我们现在能够输入密码并正常的继续 clone 代码。
 
 .. seealso:: :doc:`/usage/interactivity`
 
 
 .. _defining-connections:
 
-Defining connections beforehand
+预定义连接
 -------------------------------
 
-Specifying connection info at runtime gets old real fast, so Fabric provides a
-handful of ways to do it in your fabfile or on the command line. We won't cover
-all of them here, but we will show you the most common one: setting the global
-host list, :ref:`env.hosts <hosts>`.
+在运行时输入连接信息太古老了也不够快，因此 Fabric 提供了其他几种方式在你的 fabfile 中或者其他命令行中指定。我们在这里不准备全讲到，不过我们会告诉你最常用的一个：设置全局主机列表，:ref:`env.hosts <hosts>`。
 
-:doc:`env <usage/env>` is a global dictionary-like object driving many of
-Fabric's settings, and can be written to with attributes as well (in fact,
-`~fabric.context_managers.settings`, seen above, is simply a wrapper for this.)
-Thus, we can modify it at module level near the top of our fabfile like so::
+:doc:`env <usage/env>` 是一个全局类字典对象，驱动着 Fabric 的很多设置，并也可以被写入属性（实际上，
+上面看到的 `~fabric.context_managers.settings`，就是它的一个简单包装)。
+因此，我们可以在模块层级上修改它，我们的 fabfile 文件顶部看起来像这样::
 
     from __future__ import with_statement
     from fabric.api import *
@@ -404,22 +333,17 @@ Thus, we can modify it at module level near the top of our fabfile like so::
     def test():
         do_test_stuff()
 
-When ``fab`` loads up our fabfile, our modification of ``env`` will execute,
-storing our settings change. The end result is exactly as above: our ``deploy``
-task will run against the ``my_server`` server.
+当 ``fab`` 加载我们的 fabfile 文件，我们对 ``env`` 的修改就会执行，存储我们修改的设置。最终结果就像上面那样：我们的 ``deploy`` 任务将在 ``my_server`` 服务器上执行。
 
-This is also how you can tell Fabric to run on multiple remote systems at once:
-because ``env.hosts`` is a list, ``fab`` iterates over it, calling the given
-task once for each connection.
+在这里你也可以告诉 Fabric 在多台远程主机上同时执行：因为 ``env.hosts`` 是一个列表，``fab`` 迭代遍历它，在每一台主机上执行我们指定的任务。
 
 .. seealso:: :doc:`usage/env`, :ref:`host-lists`
 
 
-Conclusion
+结论
 ==========
 
-Our completed fabfile is still pretty short, as such things go. Here it is in
-its entirety::
+我们完成的 fabfile 仍然很简短。下面是它的完整内容::
 
     from __future__ import with_statement
     from fabric.api import *
@@ -453,16 +377,14 @@ its entirety::
             run("git pull")
             run("touch app.wsgi")
 
-This fabfile makes use of a large portion of Fabric's feature set:
+这个 fabfile 文件用到了 Fabric 特性集中的很大一部分：
 
-* defining fabfile tasks and running them with :doc:`fab <usage/fab>`;
-* calling local shell commands with `~fabric.operations.local`;
-* modifying env vars with `~fabric.context_managers.settings`;
-* handling command failures, prompting the user, and manually aborting;
-* and defining host lists and `~fabric.operations.run`-ning remote commands.
+* 定义 fabfile 任务并通过 :doc:`fab <usage/fab>` 运行它们；
+* 通过 `~fabric.operations.local` 调用本地 SHELL 命令；
+* 修改 env 变量通过 `~fabric.context_managers.settings`；
+* 处理命令故障，提示用户，并手动中止；
+* 定义主机列表，并且调用 `~fabric.operations.run` 运行远程命令
 
-However, there's still a lot more we haven't covered here! Please make sure you
-follow the various "see also" links, and check out the documentation table of
-contents on :doc:`the main index page <index>`.
+然而，还有很多我们这里没有讲到的！请跟随 “see also”链接，并浏览文档索引 :doc:`the main index page <index>`。
 
-Thanks for reading!
+感谢阅读！
