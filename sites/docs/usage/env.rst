@@ -1,47 +1,29 @@
 ===================================
-The environment dictionary, ``env``
+环境字典 ``env``
 ===================================
 
-A simple but integral aspect of Fabric is what is known as the "environment": a
-Python dictionary subclass, which is used as a combination settings registry and
-shared inter-task data namespace.
+Fabric 的一个简单但完整的方面是 “environment”：一个 Python 字典子类，被用作设置组合记录以及共享任务内部的数据和命名空间。
 
-The environment dict is currently implemented as a global singleton,
-``fabric.state.env``, and is included in ``fabric.api`` for convenience. Keys
-in ``env`` are sometimes referred to as "env variables".
+环境字典当前通过一个全局单例来实现， ``fabric.state.env``，并且为了方便被包含在 ``fabric.api`` 中。``env`` 中的键有时也被认为是“环境变量”。
 
-Environment as configuration
-============================
+环境即配置
+==========
 
-Most of Fabric's behavior is controllable by modifying ``env`` variables, such
-as ``env.hosts`` (as seen in :ref:`the tutorial <defining-connections>`). Other
-commonly-modified env vars include:
+大多数 Fabric 的行为通过修改 ``env`` 变量是可控的，例如 ``env.hosts``（就像在 :ref:`the tutorial <defining-connections>` 中能看到的）。其他通常会被修改的环境变量有：
 
-* ``user``: Fabric defaults to your local username when making SSH connections,
-  but you can use ``env.user`` to override this if necessary. The :doc:`execution`
-  documentation also has info on how to specify usernames on a per-host basis.
-* ``password``: Used to explicitly set your default connection or sudo password
-  if desired. Fabric will prompt you when necessary if this isn't set or
-  doesn't appear to be valid.
-* ``warn_only``: a Boolean setting determining whether Fabric exits when
-  detecting errors on the remote end. See :doc:`execution` for more on this
-  behavior.
+* ``user``：当建立 SSH 连接时，Fabric 默认使用你本地的用户名，但是你可以使用 ``env.user`` 去覆盖它如果你需要的话。:doc:`execution` 文档中也有一些关于如何为每一台主机指定用户名的基础信息。
+* ``password``：用于具体设置你默认连接的密码或者 sudo 密码，如果需要的话。Fabric 会提示你如果你还没有设置或者设置的内容不合法。
+* ``warn_only``：一个布尔值，用于设定 Fabric 在探测到错误时是否退出。查看这个行为的更多信息，请看 :doc:`execution`
 
-There are a number of other env variables; for the full list, see
-:ref:`env-vars` at the bottom of this document.
+还有很多其他的环境变量；查看完整列表，请看文档底部的 :ref:`env-vars`
 
-The `~fabric.context_managers.settings` context manager
--------------------------------------------------------
+上下文管理器 `~fabric.context_managers.settings`
+------------------------------------------------
 
-In many situations, it's useful to only temporarily modify ``env`` vars so that
-a given settings change only applies to a block of code. Fabric provides a
-`~fabric.context_managers.settings` context manager, which takes any number of
-key/value pairs and will use them to modify ``env`` within its wrapped block.
+在很多请看下，临时修改 ``env`` 变量是很有用的，因此一个给定的设置修改只作用于一个代码块。Fabric 提供了一个上下文管理器 `~fabric.context_managers.settings`，它接受任意数目的 键/值 对 并用它们来修改它所包裹的块中的 ``env`` 。
 
-For example, there are many situations where setting ``warn_only`` (see below)
-is useful. To apply it to a few lines of code, use
-``settings(warn_only=True)``, as seen in this simplified version of the
-``contrib`` `~fabric.contrib.files.exists` function::
+举例来说，有很多设定 ``warn_only`` 很有用的场景（看下面）。
+将它用到代码中，使用 ``settings(warn_only=True)``，正如在这个 ``contrib``  简化版本中看到的 `~fabric.contrib.files.exists` 函数::
 
     from fabric.api import settings, run
 
@@ -49,60 +31,40 @@ is useful. To apply it to a few lines of code, use
         with settings(warn_only=True):
             return run('test -e %s' % path)
 
-See the :doc:`../api/core/context_managers` API documentation for details on
-`~fabric.context_managers.settings` and other, similar tools.
+查看 :doc:`../api/core/context_managers` API 文档了解 `~fabric.context_managers.settings` 以及其他类似工具的详细信息。
 
-Environment as shared state
-===========================
+环境作为共享状态
+================
 
-As mentioned, the ``env`` object is simply a dictionary subclass, so your own
-fabfile code may store information in it as well. This is sometimes useful for
-keeping state between multiple tasks within a single execution run.
+正如前面提到的，``env`` 对象只是一个字典的子类，所以你的 fabfile 文件中的代码也可以在里面存储信息。有时这对于保持一次执行中多个任务之间的状态是很有用的。
 
 .. note::
 
-    This aspect of ``env`` is largely historical: in the past, fabfiles were
-    not pure Python and thus the environment was the only way to communicate
-    between tasks. Nowadays, you may call other tasks or subroutines directly,
-    and even keep module-level shared state if you wish.
+    ``env`` 的这方面是由于历史原因：在过去，fabfile 文件并不是纯 Python 代码，因此环境变量是任务间沟通的唯一办法。现在，你可以直接调用其他任务或者子程序库，如果你愿意的话，甚至可以保存模块级别的共享状态。
 
-    In future versions, Fabric will become threadsafe, at which point ``env``
-    may be the only easy/safe way to keep global state.
+    在未来的版本中，Fabric 会变得线程安全，在这种情况下 ``env`` 可能是保持全局状态的唯一简单并安全的方法。
 
-Other considerations
-====================
+其他考虑
+========
 
-While it subclasses ``dict``, Fabric's ``env`` has been modified so that its
-values may be read/written by way of attribute access, as seen in some of the
-above material. In other words, ``env.host_string`` and ``env['host_string']``
-are functionally identical. We feel that attribute access can often save a bit
-of typing and makes the code more readable, so it's the recommended way to
-interact with ``env``.
+因为它是 ``dict`` 的子类，Fabric 的 ``env`` 的值可以通过访问属性来读/写，正如在上面的材料中看到的。换句话说，``env.host_string`` 和 ``env['host_string']`` 在功能上是等价的。我们觉得访问属性通常可以简化一点输入并增加代码的可读性，所以，使用属性来读写值是推荐的与 ``env`` 交互的方式。
 
-The fact that it's a dictionary can be useful in other ways, such as with
-Python's ``dict``-based string interpolation, which is especially handy if you
-need to insert multiple env vars into a single string. Using "normal" string
-interpolation might look like this::
+它是个字典的事实在其他方面也很有用，例如基于 Python  ``dict`` 的字符串插值，如果你需要在一个字符串中插入多个变量值的时候是很有用的。使用“常规”字符串插值看起来像这样::
 
     print("Executing on %s as %s" % (env.host, env.user))
 
-Using dict-style interpolation is more readable and slightly shorter::
+使用字典风格的差值可读性更强，也更简短。
 
         print("Executing on %(host)s as %(user)s" % env)
 
 .. _env-vars:
 
-Full list of env vars
+环境变量完整清单
 =====================
 
-Below is a list of all predefined (or defined by Fabric itself during
-execution) environment variables. While many of them may be manipulated
-directly, it's often best to use `~fabric.context_managers`, either generally
-via `~fabric.context_managers.settings` or via specific context managers such
-as `~fabric.context_managers.cd`.
+下面的所有预定义的（或者是 Fabric在运行中定义的）环境变量清单。尽管它们中的许多可以被直接操作，但是通常最好使用 `~fabric.context_managers`，或者通过 `~fabric.context_managers.settings` 又或者是指定具体的上下文管理器例如 `~fabric.context_managers.cd`。
 
-Note that many of these may be set via ``fab``'s command-line switches -- see
-:doc:`fab` for details. Cross-references are provided where appropriate.
+注意，它们中的许多可以通过 ``fab`` 的命令行参数来设置 -- 详细信息请看 :doc:`fab`。相应的地方也提供有交叉引用。
 
 .. seealso:: :option:`--set`
 
@@ -111,33 +73,22 @@ Note that many of these may be set via ``fab``'s command-line switches -- see
 ``abort_exception``
 -------------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Fabric normally handles aborting by printing an error message to stderr and
-calling ``sys.exit(1)``. This setting allows you to override that behavior
-(which is what happens when ``env.abort_exception`` is ``None``.)
+Fabric 通过打印一个错误信息到 stderr 并调用 ``sys.exit(1)`` 来处理中止。这个设置允许你复写这个行为（即 ``env.abort_exception`` 发生时做什么。）
 
-Give it a callable which takes a string (the error message that would have been
-printed) and returns an exception instance.  That exception object is then
-raised instead of ``SystemExit`` (which is what ``sys.exit`` does.)
+给它一个可调用的对象，它可以接受一个字符串（原来将被打印的错误信息），并返回一个异常实例。这个异常对象将被抛出以替代（原来 ``sys.exit`` 执行的） ``SystemExit`` 。
 
-Much of the time you'll want to simply set this to an exception class, as those
-fit the above description perfectly (callable, take a string, return an
-exception instance.) E.g. ``env.abort_exception = MyExceptionClass``.
+很多时候，你想你把它设置为一个简单的异常类，它完美的匹配上面的描述（可调用，接受一个字符串参数，返回一个异常实例。）例如 ``env.abort_exception = MyExceptionClass``。
 
 .. _abort-on-prompts:
 
 ``abort_on_prompts``
 --------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-When ``True``, Fabric will run in a non-interactive mode, calling
-`~fabric.utils.abort` anytime it would normally prompt the user for input (such
-as password prompts, "What host to connect to?" prompts, fabfile invocation of
-`~fabric.operations.prompt`, and so forth.) This allows users to ensure a Fabric
-session will always terminate cleanly instead of blocking on user input forever
-when unforeseen circumstances arise.
+当为``真``时，Fabric 会运行在非交互模式，这时任何要求用户输入（例如输入密码，输入你连接的主机，fabfile调用 `~fabric.operations.prompt`等。）都会调用 `~fabric.utils.abort` 。这允许用户确保在不可预见的情况发生时一个 Fabric 会话总是会干净的结束而不是被等待用户的输入阻塞。
 
 .. versionadded:: 1.1
 .. seealso:: :option:`--abort-on-prompts`
@@ -146,10 +97,9 @@ when unforeseen circumstances arise.
 ``all_hosts``
 -------------
 
-**Default:** ``[]``
+**默认值：** ``[]``
 
-Set by ``fab`` to the full host list for the currently executing command. For
-informational purposes only.
+由 ``fab`` 设置的当前执行命令的完整主机列表。仅供显示信息。
 
 .. seealso:: :doc:`execution`
 
@@ -158,10 +108,9 @@ informational purposes only.
 ``always_use_pty``
 ------------------
 
-**Default:** ``True``
+**默认值：** ``True``
 
-When set to ``False``, causes `~fabric.operations.run`/`~fabric.operations.sudo`
-to act as if they have been called with ``pty=False``.
+当设置为 ``false`` 时，会使 `~fabric.operations.run`/`~fabric.operations.sudo` 的行为像他们被用 ``pty=False`` 参数调用时一样。
 
 .. seealso:: :option:`--no-pty`
 .. versionadded:: 1.0
@@ -171,10 +120,9 @@ to act as if they have been called with ``pty=False``.
 ``colorize_errors``
 -------------------
 
-**Default** ``False``
+**默认值** ``False``
 
-When set to ``True``, error output to the terminal is colored red and warnings
-are colored magenta to make them easier to see.
+当设置为 ``True`` 时，错误以红色输出到终端，警告以品后色输出到终端，以使它们更容易被看见。
 
 .. versionadded:: 1.7
 
@@ -183,33 +131,27 @@ are colored magenta to make them easier to see.
 ``combine_stderr``
 ------------------
 
-**Default**: ``True``
+**默认值**: ``True``
 
-Causes the SSH layer to merge a remote program's stdout and stderr streams to
-avoid becoming meshed together when printed. See :ref:`combine_streams` for
-details on why this is needed and what its effects are.
+使 SSH 层合并远端程序的 stdout 和 stderr 流以避免打印时混淆在一起。查看 :ref:`combine_streams` 了解更多细节，了解为什么需要这个功能以及它有什么效果。
 
 .. versionadded:: 1.0
 
 ``command``
 -----------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Set by ``fab`` to the currently executing command name (e.g., when executed as
-``$ fab task1 task2``, ``env.command`` will be set to ``"task1"`` while
-``task1`` is executing, and then to ``"task2"``.) For informational purposes
-only.
+由 ``fab`` 设置的当前执行的任务名（例如，当执行 ``$ fab task1 task2`` 时，当``task1`` 正在执行时 ``env.command`` 会被设置为 ``task1``，当``task2`` 正在执行时，会被设置为 ``"task2"``。）仅供显示信息。
 
 .. seealso:: :doc:`execution`
 
 ``command_prefixes``
 --------------------
 
-**Default:** ``[]``
+**默认值：** ``[]``
 
-Modified by `~fabric.context_managers.prefix`, and prepended to commands
-executed by `~fabric.operations.run`/`~fabric.operations.sudo`.
+由 `~fabric.context_managers.prefix` 修改，并追加在由 `~fabric.operations.run`/`~fabric.operations.sudo` 执行的命令之前。
 
 .. versionadded:: 1.0
 
@@ -218,9 +160,9 @@ executed by `~fabric.operations.run`/`~fabric.operations.sudo`.
 ``command_timeout``
 -------------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Remote command timeout, in seconds.
+远程命令超时时间，以秒作单位。
 
 .. versionadded:: 1.6
 .. seealso:: :option:`--command-timeout`
@@ -230,9 +172,9 @@ Remote command timeout, in seconds.
 ``connection_attempts``
 -----------------------
 
-**Default:** ``1``
+**默认值：** ``1``
 
-Number of times Fabric will attempt to connect when connecting to a new server. For backwards compatibility reasons, it defaults to only one connection attempt.
+当 Fabric 连接一台新服务器时尝试连接的次数。处于向后兼容的原因，默认只尝试连接一次。
 
 .. versionadded:: 1.4
 .. seealso:: :option:`--connection-attempts`, :ref:`timeout`
@@ -240,25 +182,20 @@ Number of times Fabric will attempt to connect when connecting to a new server. 
 ``cwd``
 -------
 
-**Default:** ``''``
+**默认值：** ``''``
 
-Current working directory. Used to keep state for the
-`~fabric.context_managers.cd` context manager.
+当前工作目录。用于保持 `~fabric.context_managers.cd` 上下文管理器的状态。
 
 .. _dedupe_hosts:
 
 ``dedupe_hosts``
 ----------------
 
-**Default:** ``True``
+**默认值：** ``True``
 
-Deduplicate merged host lists so any given host string is only represented once
-(e.g. when using combinations of ``@hosts`` + ``@roles``, or ``-H`` and
-``-R``.)
+合并重复的主机列表，使给定的主机字串只出现一次（例如，当组合使用 ``@hosts`` + ``@roles``，或者 ``-H`` 和 ``-R`` 时。）
 
-When set to ``False``, this option relaxes the deduplication, allowing users
-who explicitly want to run a task multiple times on the same host (say, in
-parallel, though it works fine serially too) to do so.
+当设置为 ``False`` 时，允许重复，这将明确允许用户在一台相同的主机上运行一个任务多次（并行的，尽管串行也能正常工作）。
 
 .. versionadded:: 1.5
 
@@ -267,11 +204,9 @@ parallel, though it works fine serially too) to do so.
 ``disable_known_hosts``
 -----------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, the SSH layer will skip loading the user's known-hosts file.
-Useful for avoiding exceptions in situations where a "known host" changing its
-host key is actually valid (e.g. cloud servers such as EC2.)
+如果为 ``True``，SSH 层会跳过加载用户的已知主机文件。对于一台已知主机修改了它的主机 key 时会有效的避免异常（例如 EC2 等云服务器）。
 
 .. seealso:: :option:`--disable-known-hosts <-D>`, :doc:`ssh`
 
@@ -281,27 +216,21 @@ host key is actually valid (e.g. cloud servers such as EC2.)
 ``eagerly_disconnect``
 ----------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, causes ``fab`` to close connections after each individual task
-execution, instead of at the end of the run. This helps prevent a lot of
-typically-unused network sessions from piling up and causing problems with
-limits on per-process open files, or network hardware.
+如果为 ``True``，使 ``fab`` 在各个独立任务执行后关闭连接，而不是在整个运行结束之后。这可以帮助预防堆积大量未使用的网络会话或者由于单个进程打开文件数量限制或者网络硬件限制引起的问题。
 
 .. note::
-    When active, this setting will result in the disconnect messages appearing
-    throughout your output, instead of at the end. This may be improved in
-    future releases.
-
+    当激活时，这个设置会导致断开连接的信息遍及你的输出，而不是在最后。在后续版本中或许会改进这点。
+    
 .. _effective_roles:
 
 ``effective_roles``
 -------------------
 
-**Default:** ``[]``
+**默认值：** ``[]``
 
-Set by ``fab`` to the roles list of the currently executing command. For
-informational purposes only.
+由 ``fab`` 设置的当前正在执行的命令的角色列表。仅供显示信息。
 
 .. versionadded:: 1.9
 .. seealso:: :doc:`execution`
@@ -311,10 +240,9 @@ informational purposes only.
 ``exclude_hosts``
 -----------------
 
-**Default:** ``[]``
+**默认值：** ``[]``
 
-Specifies a list of host strings to be :ref:`skipped over <exclude-hosts>`
-during ``fab`` execution. Typically set via :option:`--exclude-hosts/-x <-x>`.
+指定一个主机字串列表以被在 ``fab`` 执行中跳过 :ref:`skipped over <exclude-hosts>`。通常通过 :option:`--exclude-hosts/-x <-x>` 设置。
 
 .. versionadded:: 1.1
 
@@ -322,12 +250,10 @@ during ``fab`` execution. Typically set via :option:`--exclude-hosts/-x <-x>`.
 ``fabfile``
 -----------
 
-**Default:** ``fabfile.py``
+**默认值：** ``fabfile.py``
 
-Filename pattern which ``fab`` searches for when loading fabfiles.
-To indicate a specific file, use the full path to the file. Obviously, it
-doesn't make sense to set this in a fabfile, but it may be specified in a
-``.fabricrc`` file or on the command line.
+当加载 fabfiles 文件时， ``fab`` 搜索的文件名。
+为了表示一个具体的文件，使用文件的绝对路径。显然不可能在一个 fabfile 中设置这个，但是可以在一个 ``.fabricrc`` 文件或者命令行设置它。
 
 .. seealso:: :option:`--fabfile <-f>`, :doc:`fab`
 
@@ -337,8 +263,10 @@ doesn't make sense to set this in a fabfile, but it may be specified in a
 ``gateway``
 -----------
 
-**Default:** ``None``
+**默认值：** ``None``
 
+有问题！！！
+允许通过指定的主机 SSH 驱动的网关。它的值应该是一个常规 Fabric 主机字串，就像在例子 :ref:`env.host_string <host_string>` 中使用的。当它被设置后，新创建的连接会被设置将他们的 SSH 数据传输通过这个远程的 SSH 到达最终目的地。
 Enables SSH-driven gatewaying through the indicated host. The value should be a
 normal Fabric host string as used in e.g. :ref:`env.host_string <host_string>`.
 When this is set, newly created connections will be set to route their SSH
@@ -354,12 +282,9 @@ traffic through the remote SSH daemon to the final destination.
 ``host_string``
 ---------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Defines the current user/host/port which Fabric will connect to when executing
-`~fabric.operations.run`, `~fabric.operations.put` and so forth. This is set by
-``fab`` when iterating over a previously set host list, and may also be
-manually set when using Fabric as a library.
+定义了 Fabric 执行 `~fabric.operations.run`，`~fabric.operations.put` 之类命令时使用的用户/主机/端口。它由 ``fab`` 在遍历一个先前的主机列表时设置，也可以在使用 Fabric 时作为一个库手动设置。
 
 .. seealso:: :doc:`execution`
 
@@ -369,9 +294,9 @@ manually set when using Fabric as a library.
 ``forward_agent``
 --------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, enables forwarding of your local SSH agent to the remote end.
+如果设置为 ``True``，允许映射你的本地 SSH 代理到远端。
 
 .. versionadded:: 1.4
 
@@ -382,19 +307,18 @@ If ``True``, enables forwarding of your local SSH agent to the remote end.
 ``host``
 --------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Set to the hostname part of ``env.host_string`` by ``fab``. For informational
-purposes only.
+由 ``fab`` 设置为 ``env.host_string`` 的主机名部分。仅供显示信息。
 
 .. _hosts:
 
 ``hosts``
 ---------
 
-**Default:** ``[]``
+**默认值：** ``[]``
 
-The global host list used when composing per-task host lists.
+全局主机列表用于构成每个任务的主机列表。
 
 .. seealso:: :option:`--hosts <-H>`, :doc:`execution`
 
@@ -403,11 +327,9 @@ The global host list used when composing per-task host lists.
 ``keepalive``
 -------------
 
-**Default:** ``0`` (i.e. no keepalive)
+**默认值：** ``0`` (i.e. no keepalive)
 
-An integer specifying an SSH keepalive interval to use; basically maps to the
-SSH config option ``ServerAliveInterval``. Useful if you find connections are
-timing out due to meddlesome network hardware or what have you.
+一个整数值用于指定一个 SSH 保持活动间隔；基本来说，它映射到 SSH 设置选项 ``ServerAliveInterval``。如果你发现由于网络硬件或者其他原因导致连接超时时它是很有用的。
 
 .. seealso:: :option:`--keepalive`
 .. versionadded:: 1.1
@@ -418,10 +340,9 @@ timing out due to meddlesome network hardware or what have you.
 ``key``
 ----------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-A string, or file-like object, containing an SSH key; used during connection
-authentication.
+一个字符串，或者类文件对象，包含一个 SSH key；用于认证连接。
 
 .. note::
     The most common method for using SSH keys is to set :ref:`key-filename`.
@@ -434,8 +355,9 @@ authentication.
 ``key_filename``
 ----------------
 
-**Default:** ``None``
-
+**默认值：** ``None``
+感觉有问题！！
+可以是一个字符串或者是一个字符串列表，包含连接时使用的 SSH key 文件的路径。直接传到 SSH 层。可以被设置/追加，通过 :option:`-i`。
 May be a string or list of strings, referencing file paths to SSH key files to
 try when connecting. Passed through directly to the SSH layer. May be
 set/appended to with :option:`-i`.
@@ -447,12 +369,9 @@ set/appended to with :option:`-i`.
 ``linewise``
 ------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-Forces buffering by line instead of by character/byte, typically when running
-in parallel mode. May be activated via :option:`--linewise`. This option is
-implied by :ref:`env.parallel <env-parallel>` -- even if ``linewise`` is False,
-if ``parallel`` is True then linewise behavior will occur.
+通常当运行在并行模式，强制按行缓冲而不是按字/字节缓冲。可以通过 :option:`--linewise` 来激活。这个选项由 :ref:`env.parallel <env-parallel>` 实现 -- 即使 ``linewise`` 为 False，如果 ``parallel`` 为 True，那么 linewise 也会按为 True 时的设置运行。
 
 .. seealso:: :ref:`linewise-output`
 
@@ -464,20 +383,17 @@ if ``parallel`` is True then linewise behavior will occur.
 ``local_user``
 --------------
 
-A read-only value containing the local system username. This is the same value
-as :ref:`user`'s initial value, but whereas :ref:`user` may be altered by CLI
-arguments, Python code or specific host strings, :ref:`local-user` will always
-contain the same value.
+一个只读的值包含本地系统用户名。这个与 :ref:`user` 的初始值相同，但是 :ref:`user` 也可以被命令行参数，Python 代码或者指定的主机字串更改，:ref:`local-user` 总会包含相同的值。
 
 .. _no_agent:
 
 ``no_agent``
 ------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, will tell the SSH layer not to seek out running SSH agents when
-using key-based authentication.
+
+如果设置为 ``True``，就会告诉 SSH 层使用基于秘钥的认证时不要寻找运行中的 SSH 代理。
 
 .. versionadded:: 0.9.1
 .. seealso:: :option:`--no_agent <-a>`
@@ -487,11 +403,9 @@ using key-based authentication.
 ``no_keys``
 ------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, will tell the SSH layer not to load any private key files from
-one's ``$HOME/.ssh/`` folder. (Key files explicitly loaded via ``fab -i`` will
-still be used, of course.)
+如果设置为 ``True``，就会告诉 SSH 不要从 ``$HOME/.ssh/`` 文件夹中加载任何私钥。（当然通过 ``fab -i`` 明确加载的秘钥文件还是会被使用。)
 
 .. versionadded:: 0.9.1
 .. seealso:: :option:`-k`
@@ -501,10 +415,10 @@ still be used, of course.)
 ``parallel``
 -------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-When ``True``, forces all tasks to run in parallel. Implies :ref:`env.linewise
-<env-linewise>`.
+当设置为 ``True``，强制所有任务并行运行。说明 :ref:`env.linewise
+<env-linewise>`。
 
 .. versionadded:: 1.3
 .. seealso:: :option:`--parallel <-P>`, :doc:`parallel`
@@ -514,10 +428,9 @@ When ``True``, forces all tasks to run in parallel. Implies :ref:`env.linewise
 ``password``
 ------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-The default password used by the SSH layer when connecting to remote hosts,
-**and/or** when answering `~fabric.operations.sudo` prompts.
+用于 SSH 层连接远程主机时使用的默认密码，**并且/或者**当响应 `~fabric.operations.sudo` 请求时。
 
 .. seealso:: :option:`--initial-password-prompt <-I>`, :ref:`env.passwords <passwords>`, :ref:`password-management`
 
@@ -526,16 +439,12 @@ The default password used by the SSH layer when connecting to remote hosts,
 ``passwords``
 -------------
 
-**Default:** ``{}``
+**默认值：** ``{}``
 
-This dictionary is largely for internal use, and is filled automatically as a
-per-host-string password cache. Keys are full :ref:`host strings
-<host-strings>` and values are passwords (strings).
+这个字典主要用于内部使用，并且被被缓存的主机密码键值对自动填充。键是完整的 :ref:`host strings<host-strings>`，值是密码（字符串）。
 
-.. warning::
-    If you modify or generate this dict manually, **you must use fully
-    qualified host strings** with user and port values. See the link above for
-    details on the host string API.
+.. 警告::
+    如果你手动修改或者生成这个字典的话，**你必须使用合适的主机字串**包含用户和端口。查看上面关于主机字串 API 的连接以了解详情。
 
 .. seealso:: :ref:`password-management`
 
@@ -547,12 +456,10 @@ per-host-string password cache. Keys are full :ref:`host strings
 ``path``
 --------
 
-**Default:** ``''``
+**默认值：** ``''``
 
-Used to set the ``$PATH`` shell environment variable when executing commands in
-`~fabric.operations.run`/`~fabric.operations.sudo`/`~fabric.operations.local`.
-It is recommended to use the `~fabric.context_managers.path` context manager
-for managing this value instead of setting it directly.
+用来设置执行 `~fabric.operations.run`/`~fabric.operations.sudo`/`~fabric.operations.local` 时的 ``$PATH`` shell 环境变量。
+推荐使用 `~fabric.context_managers.path` 上下文管理器来管理这个值，而不是直接设置它。
 
 .. versionadded:: 1.0
 
@@ -562,9 +469,9 @@ for managing this value instead of setting it directly.
 ``pool_size``
 -------------
 
-**Default:** ``0``
+**默认值：** ``0``
 
-Sets the number of concurrent processes to use when executing tasks in parallel.
+用来设置设置并发执行任务时的并发进程数。
 
 .. versionadded:: 1.3
 .. seealso:: :option:`--pool-size <-z>`, :doc:`parallel`
@@ -574,11 +481,9 @@ Sets the number of concurrent processes to use when executing tasks in parallel.
 ``prompts``
 -------------
 
-**Default:** ``{}``
+**默认值：** ``{}``
 
-The ``prompts`` dictionary allows users to control interactive prompts. If a
-key in the dictionary is found in a command's standard output stream, Fabric
-will automatically answer with the corresponding dictionary value.
+``prompts`` 字典允许用户控制交互的提示符。如果一个字典中的键在一个命令的标准输出流中被找到了，Fabric 会自动以字典中对应的值响应。
 
 .. versionadded:: 1.9
 
@@ -587,20 +492,18 @@ will automatically answer with the corresponding dictionary value.
 ``port``
 --------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Set to the port part of ``env.host_string`` by ``fab`` when iterating over a
-host list. May also be used to specify a default port.
+当遍历一个主机列表时，通过 ``fab`` 设置的 ``env.host_string`` 的端口部分。也可以用来指定一个具体的默认端口。
 
 .. _real-fabfile:
 
 ``real_fabfile``
 ----------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Set by ``fab`` with the path to the fabfile it has loaded up, if it got that
-far. For informational purposes only.
+由 ``fab`` 设置的启动时加载的 fabfile 文件的路径，如果设置了的话。仅供显示信息。
 
 .. seealso:: :doc:`fab`
 
@@ -610,17 +513,13 @@ far. For informational purposes only.
 ``remote_interrupt``
 --------------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Controls whether Ctrl-C triggers an interrupt remotely or is captured locally,
-as follows:
+设置 Ctrl-C 触发器是用来中断远程主机还是被本地主机捕获，如下：
 
-* ``None`` (the default): only `~fabric.operations.open_shell` will exhibit
-  remote interrupt behavior, and
-  `~fabric.operations.run`/`~fabric.operations.sudo` will capture interrupts
-  locally.
-* ``False``: even `~fabric.operations.open_shell` captures locally.
-* ``True``: all functions will send the interrupt to the remote end.
+* ``None`` （默认值）：只有 `~fabric.operations.open_shell` 会展示远程中断行为，`~fabric.operations.run`/`~fabric.operations.sudo` 会捕捉本地中断。
+* ``False``：即使是 `~fabric.operations.open_shell` 也捕捉本地的中断。
+* ``True``：所有功能都会发送中断到远端。
 
 .. versionadded:: 1.6
 
@@ -630,9 +529,9 @@ as follows:
 ``rcfile``
 ----------
 
-**Default:** ``$HOME/.fabricrc``
+**默认值：** ``$HOME/.fabricrc``
 
-Path used when loading Fabric's local settings file.
+用于本地 Fabric 设置文件的路径。
 
 .. seealso:: :option:`--config <-c>`, :doc:`fab`
 
@@ -641,10 +540,9 @@ Path used when loading Fabric's local settings file.
 ``reject_unknown_hosts``
 ------------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, the SSH layer will raise an exception when connecting to hosts not
-listed in the user's known-hosts file.
+如果设置为 ``True``，当连接捕捉用户已知主机列表文件中的主机时，SSH 层会抛出一个异常。
 
 .. seealso:: :option:`--reject-unknown-hosts <-r>`, :doc:`ssh`
 
@@ -653,10 +551,9 @@ listed in the user's known-hosts file.
 ``system_known_hosts``
 ------------------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-If set, should be the path to a :file:`known_hosts` file.  The SSH layer will
-read this file before reading the user's known-hosts file.
+如果被设置，应该被设置为一个 :file:`known_hosts` 文件。 SSH 层在读取用户已知主机列表文件前会读取这个文件。
 
 .. seealso:: :doc:`ssh`
 
@@ -665,9 +562,9 @@ read this file before reading the user's known-hosts file.
 ``roledefs``
 ------------
 
-**Default:** ``{}``
+**默认值：** ``{}``
 
-Dictionary defining role name to host list mappings.
+定义了主机权限的字典。
 
 .. seealso:: :doc:`execution`
 
@@ -676,9 +573,9 @@ Dictionary defining role name to host list mappings.
 ``roles``
 ---------
 
-**Default:** ``[]``
+**默认值：** ``[]``
 
-The global role list used when composing per-task host lists.
+全局权限列表用于构成每个任务主机列表。
 
 .. seealso:: :option:`--roles <-R>`, :doc:`execution`
 
@@ -687,8 +584,9 @@ The global role list used when composing per-task host lists.
 ``shell``
 ---------
 
-**Default:** ``/bin/bash -l -c``
-
+**默认值：** ``/bin/bash -l -c``
+有问题！！！
+当执行命令时，值被用来当做 shell 封装器，例如 `~fabric.operations.run`。
 Value used as shell wrapper when executing commands with e.g.
 `~fabric.operations.run`. Must be able to exist in the form ``<env.shell>
 "<command goes here>"`` -- e.g. the default uses Bash's ``-c`` option which
@@ -702,9 +600,9 @@ takes a command string as its value.
 ``skip_bad_hosts``
 ------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, causes ``fab`` (or non-``fab`` use of `~fabric.tasks.execute`) to skip over hosts it can't connect to.
+如果设置为 ``True``，使得 ``fab`` （或者 `~fabric.tasks.execute`）跳过不能连接的主机。
 
 .. versionadded:: 1.4
 .. seealso::
@@ -716,10 +614,9 @@ If ``True``, causes ``fab`` (or non-``fab`` use of `~fabric.tasks.execute`) to s
 ``skip_unknown_tasks``
 ----------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-If ``True``, causes ``fab`` (or non-``fab`` use of `~fabric.tasks.execute`)
-to skip over tasks not found, without aborting.
+如果设置为 ``True``，使得 ``fab`` （或者 `~fabric.tasks.execute`）跳过未知任务，而不是中止。
 
 .. seealso::
     :option:`--skip-unknown-tasks`
@@ -730,9 +627,9 @@ to skip over tasks not found, without aborting.
 ``ssh_config_path``
 -------------------
 
-**Default:** ``$HOME/.ssh/config``
+**默认值：** ``$HOME/.ssh/config``
 
-Allows specification of an alternate SSH configuration file path.
+允许指定一个替代的 SSH 配置文件路径。
 
 .. versionadded:: 1.4
 .. seealso:: :option:`--ssh-config-path`, :ref:`ssh-config`
@@ -740,11 +637,9 @@ Allows specification of an alternate SSH configuration file path.
 ``ok_ret_codes``
 ------------------------
 
-**Default:** ``[0]``
+**默认值：** ``[0]``
 
-Return codes in this list are used to determine whether calls to
-`~fabric.operations.run`/`~fabric.operations.sudo`/`~fabric.operations.sudo`
-are considered successful.
+这个列表中的返回码被用来决定对 `~fabric.operations.run`/`~fabric.operations.sudo`/`~fabric.operations.sudo` 的调用，怎么才被认为成功执行。
 
 .. versionadded:: 1.6
 
@@ -753,12 +648,9 @@ are considered successful.
 ``sudo_prefix``
 ---------------
 
-**Default:** ``"sudo -S -p '%(sudo_prompt)s' " % env``
+**默认值：** ``"sudo -S -p '%(sudo_prompt)s' " % env``
 
-The actual ``sudo`` command prefixed onto `~fabric.operations.sudo` calls'
-command strings. Users who do not have ``sudo`` on their default remote
-``$PATH``, or who need to make other changes (such as removing the ``-p`` when
-passwordless sudo is in effect) may find changing this useful.
+实际上 ``sudo`` 前缀被加在 `~fabric.operations.sudo` 调用的命令钱。默认远端 ``$PATH`` 中没有 ``sudo`` 的用户和那些想做其他改变的用户（例如当使用不需要密码的 sudo 时移除 ``-p`` 选项）可以使用这个选项。
 
 .. seealso::
 
@@ -770,10 +662,9 @@ passwordless sudo is in effect) may find changing this useful.
 ``sudo_prompt``
 ---------------
 
-**Default:** ``"sudo password:"``
+**默认值：** ``"sudo password:"``
 
-Passed to the ``sudo`` program on remote systems so that Fabric may correctly
-identify its password prompt.
+传递给远端系统上的 ``sudo`` 程序，使得 Fabric 可以正确的认证它的密码提示。
 
 .. seealso::
 
@@ -785,10 +676,9 @@ identify its password prompt.
 ``sudo_user``
 -------------
 
-**Default:** ``None``
+**默认值：** ``None``
 
-Used as a fallback value for `~fabric.operations.sudo`'s ``user`` argument if
-none is given. Useful in combination with `~fabric.context_managers.settings`.
+被用作一个 `~fabric.operations.sudo` 的 ``user`` 参数的预备值，如果 ``user`` 为 none。在与 `~fabric.context_managers.settings` 组合使用时非常有用。
 
 .. seealso:: `~fabric.operations.sudo`
 
@@ -797,10 +687,9 @@ none is given. Useful in combination with `~fabric.context_managers.settings`.
 ``tasks``
 -------------
 
-**Default:** ``[]``
+**默认值：** ``[]``
 
-Set by ``fab`` to the full tasks list to be executed for the currently
-executing command. For informational purposes only.
+由 ``fab`` 设置的完整任务列表用来被当前任务执行。仅供显示信息。
 
 .. seealso:: :doc:`execution`
 
@@ -809,9 +698,9 @@ executing command. For informational purposes only.
 ``timeout``
 -----------
 
-**Default:** ``10``
+**默认值：** ``10``
 
-Network connection timeout, in seconds.
+网络连接超时，以秒为单位。
 
 .. versionadded:: 1.4
 .. seealso:: :option:`--timeout`, :ref:`connection-attempts`
@@ -819,8 +708,10 @@ Network connection timeout, in seconds.
 ``use_shell``
 -------------
 
-**Default:** ``True``
+**默认值：** ``True``
 
+没想好怎么翻译。。有问题！！
+全局设置
 Global setting which acts like the ``shell`` argument to
 `~fabric.operations.run`/`~fabric.operations.sudo`: if it is set to ``False``,
 operations will not wrap executed commands in ``env.shell``.
@@ -831,9 +722,9 @@ operations will not wrap executed commands in ``env.shell``.
 ``use_ssh_config``
 ------------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-Set to ``True`` to cause Fabric to load your local SSH config file.
+设置为 ``True`` 时，使得 Fabric 加载你本地的 SSH 配置文件。
 
 .. versionadded:: 1.4
 .. seealso:: :ref:`ssh-config`
@@ -844,15 +735,11 @@ Set to ``True`` to cause Fabric to load your local SSH config file.
 ``user``
 --------
 
-**Default:** User's local username
+**默认值：** 用户本地用户名
 
-The username used by the SSH layer when connecting to remote hosts. May be set
-globally, and will be used when not otherwise explicitly set in host strings.
-However, when explicitly given in such a manner, this variable will be
-temporarily overwritten with the current value -- i.e. it will always display
-the user currently being connected as.
+SSH 层连接到远程主机时使用的用户名。可以被设置为全局的，那么它将被使用除非在主机字串中明确指定。然而，当明确指定时，这个变量会临时的被当前的值覆盖 -- 即它总是会显示当前用来连接的用户。
 
-To illustrate this, a fabfile::
+为了说明这点，来看一个 fabfile 文件::
 
     from fabric.api import env, run
 
@@ -863,7 +750,7 @@ To illustrate this, a fabfile::
         with hide('running'):
             run('echo "%(user)s"' % env)
 
-and its use::
+然后使用::
 
     $ fab print_user
 
@@ -876,26 +763,19 @@ and its use::
     Disconnecting from host2... done.
     Disconnecting from host3... done.
 
-As you can see, during execution on ``host2``, ``env.user`` was set to
-``"explicit_user"``, but was restored to its previous value
-(``"implicit_user"``) afterwards.
+正如你所看到的，在 ``host2`` 主机执行过程中，``env.user`` 被设置为 ``"explicit_user"``，但是随后被恢复为它先前的值（``"implicit_user"``）。
 
 .. note::
-
-    ``env.user`` is currently somewhat confusing (it's used for configuration
-    **and** informational purposes) so expect this to change in the future --
-    the informational aspect will likely be broken out into a separate env
-    variable.
+    ``env.user`` 目前有点令人困惑（它被用于配置**和**显示信息），因此期望会修改这点 -- 显示信息的部分很有可能被分离成一个单独的环境变量。
 
 .. seealso:: :doc:`execution`, :option:`--user <-u>`
 
 ``version``
 -----------
 
-**Default:** current Fabric version string
+**默认值：** 当前 Fabric 版本字串
 
-Mostly for informational purposes. Modification is not recommended, but
-probably won't break anything either.
+多用于显示信息目的。不推荐修改，但应该不会影响到任何部分。
 
 .. seealso:: :option:`--version <-V>`
 
@@ -904,10 +784,8 @@ probably won't break anything either.
 ``warn_only``
 -------------
 
-**Default:** ``False``
+**默认值：** ``False``
 
-Specifies whether or not to warn, instead of abort, when
-`~fabric.operations.run`/`~fabric.operations.sudo`/`~fabric.operations.local`
-encounter error conditions.
+当 `~fabric.operations.run`/`~fabric.operations.sudo`/`~fabric.operations.local` 遇到错误情况时，指定是否警告，而不是中止。
 
 .. seealso:: :option:`--warn-only <-w>`, :doc:`execution`
