@@ -1,15 +1,11 @@
-Fabric is a Python (2.5-2.7) library and command-line tool for
-streamlining the use of SSH for application deployment or systems
-administration tasks.
+Fabric 中文文档（对应v1.10版本）
+-------------------------------
 
-It provides a basic suite of operations for executing local or remote shell
-commands (normally or via ``sudo``) and uploading/downloading files, as well as
-auxiliary functionality such as prompting the running user for input, or
-aborting execution.
+Fabric 是一个 Python（2.5-2.7）库以及命令行工具用于流式使用 SSH 来部署应用程序或者系统管理任务。
+
+它提供了一个基础的套件用于执行本地或者远程 shell 命令（正常执行或者通过 ``sudo`` 执行），上传/下载文件，也有类似于提示运行中用户输入的辅助功能或中止执行。
  
-Typical use involves creating a Python module containing one or more functions,
-then executing them via the ``fab`` command-line tool. Below is a small but
-complete "fabfile" containing a single task:
+通常用于调用创造的一个包含一个或多个功能的 Python 模块，然后通过 ``fab`` 命令行工具执行它们。下面是一个小而完整的包含一个任务的 "fabfile" 文件:
 
 .. code-block:: python
 
@@ -18,7 +14,7 @@ complete "fabfile" containing a single task:
     def host_type():
         run('uname -s')
 
-Once a task is defined, it may be run on one or more servers, like so::
+当一个任务被定义后，它可以运行在一台或多台服务器上，就像这样::
 
     $ fab -H localhost,linuxbox host_type
     [localhost] run: uname -s
@@ -30,7 +26,4 @@ Once a task is defined, it may be run on one or more servers, like so::
     Disconnecting from localhost... done.
     Disconnecting from linuxbox... done.
 
-In addition to use via the ``fab`` tool, Fabric's components may be imported
-into other Python code, providing a Pythonic interface to the SSH protocol
-suite at a higher level than that provided by e.g. the ``Paramiko`` library
-(which Fabric itself uses.)
+除了通过 ``fab`` 工具使用，Fabric 的组件也可以被导入到其他 Python 代码中，提供一个相对于 ``Paramiko`` 库（Fabric 自身使用的）更高层级上的 SSH 协议的 Pythonic 的接口。
