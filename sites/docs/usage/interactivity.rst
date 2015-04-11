@@ -1,148 +1,84 @@
-================================
-Interaction with remote programs
-================================
+========
+远端交互
+========
 
-Fabric's primary operations, `~fabric.operations.run` and
-`~fabric.operations.sudo`, are capable of sending local input to the remote
-end, in a manner nearly identical to the ``ssh`` program. For example, programs
-which display password prompts (e.g. a database dump utility, or changing a
-user's password) will behave just as if you were interacting with them
-directly.
+Fabric 的两大主要操作 `~fabric.operations.run` 和 `~fabric.operations.sudo` ，能够以类似于 ``ssh`` 程序的方式，把本地输入操作传送到远端（服务器）。例如，能显示密码提示的程序（数据的 dump 工具集或者用户名修改密码等）将会表现的正如你自己在直接操作一样。
 
-However, as with ``ssh`` itself, Fabric's implementation of this feature is
-subject to a handful of limitations which are not always intuitive. This
-document discusses such issues in detail.
+然而，就像 ``ssh`` 本身不够直观一样，Fabric 对 ssh 特性的实现也受到了些限制。本篇接下来主要详细讨论这个问题。
 
 .. note::
-    Readers unfamiliar with the basics of Unix stdout and stderr pipes, and/or
-    terminal devices, may wish to visit the Wikipedia pages for `Unix pipelines
-    <http://en.wikipedia.org/wiki/Pipe_(Unix)>`_ and `Pseudo terminals
-    <http://en.wikipedia.org/wiki/Pseudo_terminal>`_ respectively.
+    读者们如果不熟悉Unix的输出和错误管道和终端设备的基本知识，不妨分别访问维基百科的词条：`Unix pipelines
+    <http://en.wikipedia.org/wiki/Pipe_(Unix)>`_ 和 `Pseudo terminals
+    <http://en.wikipedia.org/wiki/Pseudo_terminal>`。
 
 
 .. _combine_streams:
 
-Combining stdout and stderr
-===========================
+stdout & stderr 合并
+====================
 
-The first issue to be aware of is that of the stdout and stderr streams, and
-why they are separated or combined as needed.
+第一个注意的问题就是标准的准错输出流控制，以及它们怎么按需分离和合并。
 
-Buffering
----------
+缓冲机制
+--------
 
-Fabric 0.9.x and earlier, and Python itself, buffer output on a line-by-line
-basis: text is not printed to the user until a newline character is found.
-This works fine in most situations but becomes problematic when one needs to
-deal with partial-line output such as prompts.
+Fabric 0.9.x 及早期版本和 Python 本身都是按基本的“逐行”的缓存输出模式：直到发现有新一行字符要打印，否则文本不会打印输出给用户。这样处理大多数情况下没什么问题，但是一到用户需要处理类似提示的“半行”输出时，这将成为一个问题。
 
 .. note::
-    Line-buffered output can make programs appear to halt or freeze for no
-    reason, as prompts print out text without a newline, waiting for the user
-    to enter their input and press Return.
+    “行缓冲”式输出可以无征兆下使程序出现停止或冻结，因为提示会打印出文本而不换行，同时会等待用户输入，然后按回车。
 
-Newer Fabric versions buffer both input and output on a character-by-character
-basis in order to make interaction with prompts possible. This has the
-convenient side effect of enabling interaction with complex programs utilizing
-the "curses" libraries or which otherwise redraw the screen (think ``top``).
+新版 Fabric 的输入输出缓冲机智基于“逐字符”，目的就是能和提示进行交互。同时在使用 "Curses" 库或者其他方式重绘屏幕（想一下top）的时候，和复杂程序交互的副作用也会结伴而来。
+这有使互动与复杂的程序，利用“curses”库或以其他方式重绘屏幕（想想 "top"）的方便的副作用。
 
-Crossing the streams
---------------------
+流之外
+------
 
-Unfortunately, printing to stderr and stdout simultaneously (as many programs
-do) means that when the two streams are printed independently one byte at a
-time, they can become garbled or meshed together. While this can sometimes be
-mitigated by line-buffering one of the streams and not the other, it's still a
-serious issue.
+不幸的是，同时打印到 stderr 和 stdout （正如多程序的做法）是指当两个流独立地一次打印一个字节，它们就开始混淆在一起。虽然这有时可以通过行缓冲一个流来而不管另一个流来缓解，它仍然是一个严重的问题。
 
-To solve this problem, Fabric uses a setting in our SSH layer which merges the
-two streams at a low level and causes output to appear more naturally. This
-setting is represented in Fabric as the :ref:`combine-stderr` env var and
-keyword argument, and is ``True`` by default.
+为了解决这个问题，Fabric 在我们的 SSH 层设置了在低水平上融合两个流，并使输出显得更自然。该设置在 Fabric 里是以 :ref:`combine_stderr` 的环境变量和关键字参数来实现，默认为 ``True`` 。
 
-Due to this default setting, output will appear correctly, but at the
-cost of an empty ``.stderr`` attribute on the return values of
-`~fabric.operations.run`/`~fabric.operations.sudo`, as all output will appear
-to be stdout.
+介于默认设置，输出将正确显示，但代价就是 `~fabric.operations.run`/`~fabric.operations.sudo` 的返回值是一个的空 ``.stderr`` 属性，因为所有的输出将显示为标准输出。
 
-Conversely, users requiring a distinct stderr stream at the Python level and
-who aren't bothered by garbled user-facing output (or who are hiding stdout and
-stderr from the command in question) may opt to set this to ``False`` as
-needed.
+相反，需要在 Python 层级鲜明的表达标准错误流时谁要是想不被面向用户的输出的乱码困扰（或谁想从有问题的命令中屏蔽掉 stdout 和 stderr），可以选择根据需要设置为 ``False`` 。
 
 
 .. _pseudottys:
 
-Pseudo-terminals
-================
+伪终端
+======
 
-The other main issue to consider when presenting interactive prompts to users
-is that of echoing the user's own input.
+在呈现交互式提示给用户时，另一个需要考虑的主要问题是呼应用户自己的输入。
 
-Echoes
-------
+呼应
+----
 
-Typical terminal applications or bona fide text terminals (e.g. when using a
-Unix system without a running GUI) present programs with a terminal device
-called a tty or pty (for pseudo-terminal). These automatically echo all text
-typed into them back out to the user (via stdout), as interaction without
-seeing what you had just typed would be difficult. Terminal devices are also
-able to conditionally turn off echoing, allowing secure password prompts.
+典型终端应用程序或真正的文本终端（例如，使用时不需要一个运行在 Unix 系统的 GUI），是使用一个叫做 tty 或 PTY 终端（伪终端）来展示程序。诸如能够将用户输入的内容在重新返还在用户面前（通过标准输出），因为看不到之前输入内容的交互是很难的。考虑到密码提示的安全性，终端设备能够有条件的关闭呼应功能。
 
-However, it's possible for programs to be run without a tty or pty present at
-all (consider cron jobs, for example) and in this situation, any stdin data
-being fed to the program won't be echoed. This is desirable for programs being
-run without any humans around, and it's also Fabric's old default mode of
-operation.
+然而，程序不在任何一个 tty 或 PTY 里显示就运行也是可能的（考虑到 cron 后台守护进程），在这种情况下，任何标准输入的数据都不会载入呼应里。这是理想的情况，也是操作的 Fabric 的旧的默认模式。
 
-Fabric's approach
+Fabric 的解决之道
 -----------------
 
-Unfortunately, in the context of executing commands via Fabric, when no pty is
-present to echo a user's stdin, Fabric must echo it for them. This is
-sufficient for many applications, but it presents problems for password
-prompts, which become insecure.
+不幸的是，在经由 Fabric 执行命令的情况下，当没有 PTY 存呼应用户的标准输入，Fabric 必须呼应他们了。这已经足够用于许多应用中了，但它也暴露了一个不安全的问题，就是密码提示的问题。
 
-In the interests of security and meeting the principle of least surprise
-(insofar as users are typically expecting things to behave as they would when
-run in a terminal emulator), Fabric 1.0 and greater force a pty by default.
-With a pty enabled, Fabric simply allows the remote end to handle echoing or
-hiding of stdin and does not echo anything itself.
+在安全性和满足最惊喜的原则都满足的情况下（用户通常期望事情就像他们在终端模拟器上运行时的一样）， Fabric 1.0 及更高版本强制使用了一个 PTY 。随着 PTY 启用，Fabric 只简单的允许远端处理呼应或隐藏标准输入，并且不呼应任何事情本身。
 
 .. note::
-    In addition to allowing normal echo behavior, a pty also means programs
-    that behave differently when attached to a terminal device will then do so.
-    For example, programs that colorize output on terminals but not when run in
-    the background will print colored output. Be wary of this if you inspect
-    the return value of `~fabric.operations.run` or `~fabric.operations.sudo`!
+    除了允许正常的呼应行为，一个PTY也意味着，当连接到终端设备会再做这样的行为不同的程序。例如，着色输出终端上而不是在后台运行的程序时，将打印彩色输出。警惕这一点，如果你检查 `~fabric.operations.run` 或 `~fabric.operations.sudo` 的返回值！
 
-For situations requiring the pty behavior turned off, the :option:`--no-pty`
-command-line argument and :ref:`always-use-pty` env var may be used.
+对于需要关闭 PTY 行为的情况，或许会用到 :option:`--no-pty` 命令行参数和 :ref:`always_use_pty` 环境变量。
 
 
-Combining the two
-=================
+合二为一
+========
 
-As a final note, keep in mind that use of pseudo-terminals effectively implies
-combining stdout and stderr -- in much the same way as the :ref:`combine_stderr
-<combine_streams>` setting does. This is because a terminal device naturally
-sends both stdout and stderr to the same place -- the user's display -- thus
-making it impossible to differentiate between them.
+最后一点，请记住，善于使用伪终端意味着 stdout 和 stderr 的融合 -- 大多类似 :ref:`combine_stderr<combine_streams>` 设置一样。这是因为终端设备自然发送 stdout 和 stderr 到同一个地方 - 用户显示器 - 从而使其无法区分它们。
 
-However, at the Fabric level, the two groups of settings are distinct from one
-another and may be combined in various ways. The default is for both to be set
-to ``True``; the other combinations are as follows:
+然而，在 Fabric 层面，两组的设置是彼此不同的并以各种方式进行组合。它们的缺省值 ``True``; 其它组合如下：
 
-* ``run("cmd", pty=False, combine_stderr=True)``: will cause Fabric to echo all
-  stdin itself, including passwords, as well as potentially altering ``cmd``'s
-  behavior. Useful if ``cmd`` behaves undesirably when run under a pty and
-  you're not concerned about password prompts.
-* ``run("cmd", pty=False, combine_stderr=False)``: with both settings
-  ``False``, Fabric will echo stdin and won't issue a pty -- and this is highly
-  likely to result in undesired behavior for all but the simplest commands.
-  However, it is also the only way to access a distinct stderr stream, which is
-  occasionally useful.
-* ``run("cmd", pty=True, combine_stderr=False)``: valid, but won't really make
-  much of a difference, as ``pty=True`` will still result in merged streams.
-  May be useful for avoiding any edge case problems in ``combine_stderr`` (none
-  are presently known).
+* ``run("cmd", pty=False, combine_stderr=True)``：会使 Fabric 呼应所有的标准输入本身，包括密码，以及可能改变的行为。 还挺管用，如果在 pty 下 ``cmd`` 命令表现不佳时，你是不用担心密码提示的。
+* ``run("cmd", pty=False, combine_stderr=False)``：既设置为 False ，Fabric 会呼应标准输入，不会发出 PTY - 而这对所有命令来说极有可能导致意外发生，除了那些最简单的命令。然而，它也是以访问不同的标准错误流，这是偶尔有用的唯一途径。
+* ``run("cmd", pty=True, combine_stderr=False)``：有效的，但不会真正使多大的差别，如 ``PTY=True`` 仍会导致合并后的数据流。可用于避免在会发生在 ``combine_stderr`` 边缘下（目前未知）的任何问题。
+
+
+
